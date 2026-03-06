@@ -7,4 +7,5 @@ seaborn>=0.13
 statsmodels>=0.14
 linearmodels>=5.4
 scikit-learn>=1.4
+
 openpyxl>=3.1
