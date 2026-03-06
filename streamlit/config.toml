@@ -1,0 +1,71 @@
+# Gradient Institutional Theme
+
+[theme]
+
+# Núcleo visual
+primaryColor = "#EE7F33"              # Pumpkin - ação principal
+backgroundColor = "#F3F6FA"
+secondaryBackgroundColor = "#FFFFFF"  # 
+textColor = "#052035"                 # Prussian Blue
+linkColor = "#145089"                 # Dark Blue
+borderColor = "#E2E8F0"
+
+# Widgets
+showWidgetBorder = true
+showSidebarBorder = false
+baseRadius = "12px"
+buttonRadius = "12px"
+
+font = "sans serif"
+
+baseFontSize = 14
+baseFontWeight = 400
+
+# Cores semânticas refinadas
+blueColor = "#145089"
+greenColor = "#2E7D32"
+yellowColor = "#FDD324"
+orangeColor = "#EE7F33"
+redColor = "#EC3237"
+grayColor = "#7390AA"
+
+greenBackgroundColor = "#E8F5E9"
+greenTextColor = "#2E7D32"
+
+redBackgroundColor = "#FFEAEA"
+redTextColor = "#EC3237"
+
+# 🎨 CATEGÓRICO — Progressão harmônica da marca
+chartCategoricalColors = [
+    "#FDD324",  # Gold
+    "#EE7F33",  # Pumpkin
+    "#EC3237",  # Red
+    "#7390AA",  # Light Blue
+    "#145089",  # Dark Blue
+    "#052035"   # Deep Blue
+]
+
+# 🎨 SEQUENCIAL — Gradiente estratégico (ideal para heatmaps, risco, intensidade)
+chartSequentialColors = [
+    "#FFF8E1",
+    "#FFE082",
+    "#FDD324",
+    "#EE7F33",
+    "#D84315",
+    "#7390AA",
+    "#145089",
+    "#0C3B66",
+    "#052035"
+]
+
+# DataFrame
+dataframeBorderColor = "#E2E8F0"
+dataframeHeaderBackgroundColor = "#F3F6FA"
+
+# Sidebar — Gradiente implícito escuro
+[theme.sidebar]
+backgroundColor = "#052035"            # Base profunda
+secondaryBackgroundColor = "#0C3B66"   # Azul intermediário
+textColor = "#FFFFFF"
+borderColor = "#0C3B66"
+primaryColor = "#FDD324"
