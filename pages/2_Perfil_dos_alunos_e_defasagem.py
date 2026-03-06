@@ -1,406 +1,343 @@
 import streamlit as st
 import pandas as pd
-import numpy as np
 import plotly.express as px
-from sklearn.ensemble import RandomForestRegressor
+import matplotlib.pyplot as plt
 
 from utils.style import apply_global_style
-from utils.components import texto, show_plot, page_title, card_bloco
+from utils.components import texto, show_plot, section_title, section_intro
 
 # =========================
-# Config / Load
+# Page config
 # =========================
-st.set_page_config(page_title="Fatores de Risco e Evasão", layout="wide")
+st.set_page_config(page_title="Perfil dos Alunos e Defasagem", layout="wide")
 apply_global_style()
 
-page_title(
-    "Fatores de Risco e Evasão",
-    "Análise dos padrões que antecedem quedas e do perfil dos alunos em maior risco."
-)
-
 DATA_CSV = "data/base_pede_limpa.csv"
-df = pd.read_csv(DATA_CSV)
 
 # =========================
-# Helpers
+# Rótulos padronizados
 # =========================
-def to_num(df_: pd.DataFrame, cols: list[str]) -> None:
-    for c in cols:
-        if c in df_.columns:
-            df_[c] = pd.to_numeric(df_[c], errors="coerce")
+ROTULOS_NIVEL_ENSINO = {
+    "fundamental1": "Fundamental I",
+    "fundamental2": "Fundamental II",
+    "medio": "Ensino Médio",
+    "superior": "Ensino Superior",
+}
 
-def safe_years(series: pd.Series) -> list[int]:
-    y = pd.to_numeric(series, errors="coerce").dropna()
-    return sorted(y.astype(int).unique())
+ROTULOS_DEFASAGEM = {
+    "em fase": "Em fase",
+    "moderada": "Defasagem moderada",
+    "severa": "Defasagem severa",
+}
 
-def eixo_ano_inteiro(fig, anos: list[int]):
-    fig.update_xaxes(
-        tickmode="array",
-        tickvals=anos,
-        ticktext=[str(a) for a in anos],
-        title_text="Ano",
-    )
-    return fig
+ROTULOS_PEDRA = {
+    "quartzo": "Quartzo",
+    "agata": "Ágata",
+    "ametista": "Ametista",
+    "topazio": "Topázio",
+}
 
-# =========================
-# Tipagem + labels
-# =========================
-df["ano"] = pd.to_numeric(df["ano"], errors="coerce")
-anos = safe_years(df["ano"])
+ROTULOS_REDE = {
+    "publico": "Rede pública",
+    "privado": "Rede privada",
+    "outro": "Outro",
+}
 
-to_num(df, ["ida", "ieg", "ips", "ipv", "ian", "ipp", "inde"])
-
-if "evadido" in df.columns:
-    if df["evadido"].dropna().isin([0, 1]).all():
-        df["evadido"] = df["evadido"].astype(bool)
-
-df["evadido_txt"] = df["evadido"].map({False: "Não Evadiu", True: "Evadiu"})
-
-df["jornada_txt"] = (
-    df.get("jornada", pd.Series(index=df.index, dtype="object"))
-    .astype(str)
-    .str.lower()
-    .map({"recuo": "Recuo", "neutro": "Neutro", "avanco": "Avanço"})
-)
+ORDEM_NIVEL_ENSINO = ["Fundamental I", "Fundamental II", "Ensino Médio", "Ensino Superior"]
+ORDEM_DEFASAGEM = ["Em fase", "Defasagem moderada", "Defasagem severa"]
+ORDEM_PEDRA = ["Quartzo", "Ágata", "Ametista", "Topázio"]
 
 # =========================
 # Cores
 # =========================
+CORES_GENERO = {"Meninos": "#145089", "Meninas": "#EC3237"}
+
 CORES_NIVEL_ENSINO = {
-    "fundamental1": "#FDD324",
-    "fundamental2": "#EE7F33",
-    "medio": "#EC3237",
-    "superior": "#145089",
+    "Fundamental I": "#FDD324",
+    "Fundamental II": "#EE7F33",
+    "Ensino Médio": "#EC3237",
+    "Ensino Superior": "#145089",
 }
+
 CORES_DEFASAGEM = {
-    "em fase": "#145089",
-    "moderada": "#FDD324",
-    "severa": "#EE7F33"
+    "Em fase": "#145089",
+    "Defasagem moderada": "#FDD324",
+    "Defasagem severa": "#EE7F33",
 }
-CORES_EVASAO = {
-    "Evadiu": "#7390AA",
-    "Não Evadiu": "#EE7F33"
-}
-CORES_QUEDA = {
-    True: "#145089",
-    False: "#FDD324"
-}
-CORES_JORNADA = {
-    "Recuo": "#145089",
-    "Neutro": "#7390AA",
-    "Avanço": "#FDD324"
-}
-CORES_ESTUDANTE = {
-    "veterano": "#EE7F33",
-    "ingressante": "#FDD324"
+
+CORES_PEDRA = {
+    "Quartzo": "#D9DDD9",
+    "Ágata": "#B36B00",
+    "Ametista": "#800080",
+    "Topázio": "#FFD700",
 }
 
 # =========================
-# Tabs
+# Data
 # =========================
-tab1, tab2, tab3, tab4 = st.tabs(
-    [
-        "Perfil da Evasão",
-        "Padrões Psicossociais (IPS) e Quedas",
-        "Ponto de Virada (IPV)",
-        "Perfil de Risco Consolidado",
-    ]
+@st.cache_data(show_spinner=False)
+def load_data(path: str) -> pd.DataFrame:
+    df_ = pd.read_csv(path)
+
+    df_["genero_txt"] = df_["genero"].map({
+        "masculino": "Meninos",
+        "feminino": "Meninas"
+    })
+
+    for col in ["idade", "defasagem", "ian", "ipp", "ida", "iaa"]:
+        if col in df_.columns:
+            df_[col] = pd.to_numeric(df_[col], errors="coerce")
+
+    df_["nivel_ensino_lbl"] = df_["nivel_ensino"].map(ROTULOS_NIVEL_ENSINO).fillna(df_["nivel_ensino"])
+    df_["nivel_defasagem_lbl"] = df_["nivel_defasagem"].map(ROTULOS_DEFASAGEM).fillna(df_["nivel_defasagem"])
+    df_["pedra_lbl"] = df_["pedra"].map(ROTULOS_PEDRA).fillna(df_["pedra"])
+    df_["inst_ensino_lbl"] = df_["inst_ensino"].map(ROTULOS_REDE).fillna(df_["inst_ensino"])
+
+    df_["nivel_ensino_lbl"] = pd.Categorical(
+        df_["nivel_ensino_lbl"],
+        categories=ORDEM_NIVEL_ENSINO,
+        ordered=True
+    )
+    df_["nivel_defasagem_lbl"] = pd.Categorical(
+        df_["nivel_defasagem_lbl"],
+        categories=ORDEM_DEFASAGEM,
+        ordered=True
+    )
+    df_["pedra_lbl"] = pd.Categorical(
+        df_["pedra_lbl"],
+        categories=ORDEM_PEDRA,
+        ordered=True
+    )
+
+    return df_
+
+df = load_data(DATA_CSV)
+df_age = df[df["idade"].between(4, 22)].copy()
+
+# =========================
+# Header
+# =========================
+section_title("Perfil dos Alunos e Defasagem")
+section_intro(
+    "Esta seção apresenta uma visão geral do perfil dos alunos e da defasagem escolar entre 2022 e 2024, "
+    "destacando como os estudantes se distribuem por características demográficas e educacionais e como a "
+    "defasagem aparece ao longo do tempo."
 )
 
-# ==========================================================
-# TAB 1 — Perfil da Evasão
-# ==========================================================
+tab1, tab2, tab3, tab4 = st.tabs(
+    ["Visão Geral", "Defasagem (IAN)", "Autoavaliação (IAA)", "Índice Psicopedagógico (IPP)"]
+)
+
+# =========================
+# TAB 1 — Visão Geral
+# =========================
 with tab1:
     col1, col2 = st.columns(2)
 
     with col1:
-        df_pre_2024 = df[df["ano"] != 2024].copy()
-        evasao_fase = df_pre_2024.groupby("nivel_ensino", as_index=False)["evadido"].mean()
-        evasao_fase["evasao_pct"] = evasao_fase["evadido"] * 100
-
-        fig = px.bar(
-            evasao_fase,
-            x="nivel_ensino",
-            y="evasao_pct",
-            color="nivel_ensino",
-            color_discrete_map=CORES_NIVEL_ENSINO,
-            text="evasao_pct",
-            title="Evasão por Nível de Ensino (até 2023)",
-            labels={"nivel_ensino": "Nível de ensino", "evasao_pct": "Taxa de evasão (%)"},
+        fig = px.pie(
+            df,
+            names="genero_txt",
+            title="Distribuição por Gênero",
+            color="genero_txt",
+            color_discrete_map=CORES_GENERO,
         )
-        fig.update_traces(texttemplate="%{text:.1f}%", textposition="outside")
-        fig.update_layout(showlegend=False)
-        show_plot(fig, "evasao_fase")
+        show_plot(fig, "t1_genero")
 
     with col2:
-        fig = px.box(
-            df.dropna(subset=["ieg", "evadido_txt"]),
-            x="evadido_txt",
-            y="ieg",
-            color="evadido_txt",
-            color_discrete_map=CORES_EVASAO,
-            title="Distribuição de IEG: Evadidos vs Não Evadidos",
-            points="all",
-            labels={"evadido_txt": "Status de evasão", "ieg": "IEG"},
+        fig = px.histogram(
+            df_age,
+            x="idade",
+            nbins=13,
+            color="genero_txt",
+            barmode="overlay",
+            title="Distribuição por Idade",
+            color_discrete_map=CORES_GENERO,
+            labels={"idade": "Idade", "genero_txt": "Gênero"},
         )
-        fig.update_layout(showlegend=False)
-        show_plot(fig, "ieg_evasao")
+        fig.update_layout(yaxis_title="Quantidade")
+        show_plot(fig, "t1_idade")
 
     texto(
-        "A taxa de evasão por nível de ensino indica maior vulnerabilidade nas etapas intermediárias e finais da educação básica. A comparação do IEG entre evadidos e não evadidos reforça o engajamento como fator protetivo: alunos que permanecem tendem a apresentar IEG mais alto e menos disperso."
+        "A base de alunos apresenta leve predominância feminina, com 53,7% de meninas e 46,3% de meninos, indicando uma distribuição relativamente equilibrada entre os gêneros. "
+        "Em relação à idade, observa-se maior concentração entre 10 e 15 anos, com pico próximo aos 11–13 anos. As distribuições de meninas e meninos são bastante semelhantes ao longo das idades, sugerindo perfil etário homogêneo entre os gêneros e ausência de distorções relevantes na composição da amostra."
     )
 
-    col3, col4 = st.columns(2)
+    anos = sorted(df_age["ano"].dropna().unique())
+    cols = st.columns(len(anos))
 
-    comp_defasagem = (
-        df.dropna(subset=["evadido_txt", "nivel_defasagem"])
-        .groupby(["evadido_txt", "nivel_defasagem"])
-        .size()
-        .reset_index(name="contagem")
-    )
-
-    with col3:
-        evadiu = comp_defasagem[comp_defasagem["evadido_txt"] == "Evadiu"]
-        fig = px.pie(
-            evadiu,
-            names="nivel_defasagem",
-            values="contagem",
-            title="Composição da Defasagem – Evadiu",
-            color="nivel_defasagem",
-            color_discrete_map=CORES_DEFASAGEM,
-            hole=0.35,
+    for col, ano in zip(cols, anos):
+        df_ano = df_age[df_age["ano"] == ano]
+        fig = px.histogram(
+            df_ano,
+            x="idade",
+            nbins=13,
+            title=f"Idade – {ano}",
+            color_discrete_sequence=["#EE7F33"],
+            labels={"idade": "Idade", "count": "Quantidade"},
         )
-        show_plot(fig, "defasagem_evadiu")
-
-    with col4:
-        nao_evadiu = comp_defasagem[comp_defasagem["evadido_txt"] == "Não Evadiu"]
-        fig = px.pie(
-            nao_evadiu,
-            names="nivel_defasagem",
-            values="contagem",
-            title="Composição da Defasagem – Não Evadiu",
-            color="nivel_defasagem",
-            color_discrete_map=CORES_DEFASAGEM,
-            hole=0.35,
-        )
-        show_plot(fig, "defasagem_nao_evadiu")
+        fig.update_layout(yaxis_title="Quantidade")
+        col.plotly_chart(fig, use_container_width=True, key=f"t1_idade_{ano}")
 
     texto(
-        "A composição do nível de defasagem entre evadidos e não evadidos sugere que a evasão não se concentra apenas em casos de maior defasagem. Há participação relevante também de alunos em fase, indicando que fatores não acadêmicos, como vínculo e engajamento, podem ser decisivos."
+        "A distribuição etária ao longo dos três anos mantém um padrão consistente, com maior concentração de alunos entre 10 e 14 anos. Em 2022 e 2023, observa-se pico próximo aos 11–12 anos, enquanto em 2024 há leve ampliação da base e maior dispersão nas idades acima de 15 anos, refletindo o crescimento do número de veteranos no programa."
     )
 
-# ==========================================================
-# TAB 2 — IPS e Quedas
-# ==========================================================
-with tab2:
-    anos_anteriores = [2022, 2023]
-    df_prev = df[df["ano"].isin(anos_anteriores)].copy()
+    df_no_superior = df[df["nivel_ensino_lbl"] != "Ensino Superior"].copy()
+    df_no_superior["nivel_ensino_lbl"] = df_no_superior["nivel_ensino_lbl"].cat.remove_unused_categories()
 
-    ips_evolucao = df_prev.groupby(["ano", "evadido"], as_index=False)["ips"].mean()
+    df_media = (
+        df_no_superior.groupby(["ano", "nivel_ensino_lbl"], as_index=False)["defasagem"]
+        .mean()
+    )
 
     fig = px.line(
-        ips_evolucao,
+        df_media,
         x="ano",
-        y="ips",
-        color="evadido",
-        color_discrete_map=CORES_QUEDA,
+        y="defasagem",
+        color="nivel_ensino_lbl",
+        color_discrete_map=CORES_NIVEL_ENSINO,
         markers=True,
-        title="Evolução do IPS antes da queda: Grupo Caiu vs Controle",
-        labels={"ips": "IPS médio", "evadido": "Grupo (evadiu?)"},
+        title="Média da Defasagem por Ano e Nível de Ensino",
+        labels={
+            "ano": "Ano",
+            "defasagem": "Defasagem (anos)",
+            "nivel_ensino_lbl": "Nível de ensino"
+        },
     )
-    fig = eixo_ano_inteiro(fig, anos_anteriores)
-    show_plot(fig, "ips_pre_queda")
+    fig.update_xaxes(tickmode="array", tickvals=[2022, 2023, 2024], ticktext=["2022", "2023", "2024"])
+    fig.update_yaxes(autorange="reversed")
+    show_plot(fig, "t1_def_media")
 
-    texto(
-        "A evolução do IPS antes da queda revela padrão semelhante entre grupos, mas com queda mais acentuada no grupo que posteriormente piora ou evade. Isso sugere que a deterioração psicossocial pode anteceder sinais mais claros de queda."
-    )
+# =========================
+# TAB 2 — Defasagem (IAN)
+# =========================
+with tab2:
+    col_def1, col_def2 = st.columns(2)
 
-    col1, col2 = st.columns(2)
-
-    with col1:
-        fig = px.box(
-            df.dropna(subset=["nivel_defasagem", "ips"]),
-            x="nivel_defasagem",
-            y="ips",
-            color="nivel_defasagem",
-            color_discrete_map=CORES_DEFASAGEM,
-            title="Distribuição de IPS por Nível de Defasagem",
-            points="all",
-            labels={"nivel_defasagem": "Nível de defasagem", "ips": "IPS"},
-        )
-        fig.update_layout(showlegend=False)
-        show_plot(fig, "ips_defasagem")
-
-    with col2:
-        ips_fase = df.groupby("nivel_ensino", as_index=False)["ips"].mean()
-        fig = px.bar(
-            ips_fase,
-            x="nivel_ensino",
-            y="ips",
-            color="nivel_ensino",
-            color_discrete_map=CORES_NIVEL_ENSINO,
-            text="ips",
-            title="IPS Médio por Nível de Ensino",
-            labels={"nivel_ensino": "Nível de ensino", "ips": "IPS médio"},
-        )
-        fig.update_traces(texttemplate="%{text:.2f}", textposition="outside")
-        fig.update_layout(showlegend=False)
-        show_plot(fig, "ips_fase")
-
-    texto(
-        "O IPS varia moderadamente por defasagem: alunos em fase tendem a apresentar mediana ligeiramente superior. Por nível de ensino, o Ensino Superior apresenta valores mais altos, sugerindo maior estabilidade psicossocial nas etapas avançadas."
-    )
-
-# ==========================================================
-# TAB 3 — Ponto de Virada (IPV)
-# ==========================================================
-with tab3:
-    col1, col2 = st.columns(2)
-
-    with col1:
-        dist_jornada = df["jornada_txt"].value_counts(dropna=False).reset_index()
-        dist_jornada.columns = ["jornada", "contagem"]
+    with col_def1:
+        df_def = df.groupby(["ano", "nivel_defasagem_lbl"], as_index=False).size()
+        df_def["proporcao"] = df_def.groupby("ano")["size"].transform(lambda x: x / x.sum())
 
         fig = px.bar(
-            dist_jornada,
-            x="jornada",
-            y="contagem",
-            color="jornada",
-            color_discrete_map=CORES_JORNADA,
-            text="contagem",
-            title="Distribuição Geral de Alunos por Jornada",
-            labels={"jornada": "Jornada", "contagem": "Número de alunos"},
-        )
-        fig.update_traces(textposition="outside")
-        fig.update_layout(showlegend=False)
-        show_plot(fig, "dist_jornada")
-
-    with col2:
-        ipv_grouped = df.groupby(["ano", "tipo_estudante"], as_index=False)["ipv"].mean().dropna()
-
-        fig = px.bar(
-            ipv_grouped,
+            df_def,
             x="ano",
-            y="ipv",
-            color="tipo_estudante",
-            color_discrete_map=CORES_ESTUDANTE,
-            text="ipv",
-            title="IPV Médio: Veterano x Ingressante",
-            labels={"ipv": "IPV médio", "tipo_estudante": "Tipo de estudante"},
+            y="proporcao",
+            color="nivel_defasagem_lbl",
+            color_discrete_map=CORES_DEFASAGEM,
+            category_orders={"nivel_defasagem_lbl": ORDEM_DEFASAGEM},
+            title="Distribuição Proporcional da Defasagem (IAN)",
+            labels={
+                "ano": "Ano",
+                "proporcao": "Proporção",
+                "nivel_defasagem_lbl": "Nível de defasagem"
+            },
         )
-        fig = eixo_ano_inteiro(fig, anos)
-        fig.update_traces(texttemplate="%{text:.2f}", textposition="inside")
-        fig.update_layout(barmode="group")
-        show_plot(fig, "ipv_tipo")
+        fig.update_layout(barmode="stack")
+        show_plot(fig, "t2_def_prop")
 
-    texto(
-        "O IPV apresenta predominância de trajetórias neutras, seguido por avanços e menor parcela de recuos. Na comparação entre ingressantes e veteranos, as médias oscilam levemente ao longo do tempo, com tendência de convergência em 2024."
-    )
-
-    X_cols = ["ieg", "ida", "ian", "ips", "ipp"]
-    dados_rf = df.dropna(subset=X_cols + ["ipv"]).copy()
-
-    X = pd.get_dummies(dados_rf[X_cols], drop_first=True)
-    y = dados_rf["ipv"]
-
-    rf = RandomForestRegressor(n_estimators=200, random_state=42)
-    rf.fit(X, y)
-
-    importancia = (
-        pd.DataFrame({"fator": X.columns, "importancia": rf.feature_importances_})
-        .sort_values(by="importancia", ascending=True)
-    )
-
-    fig = px.bar(
-        importancia,
-        x="importancia",
-        y="fator",
-        orientation="h",
-        text="importancia",
-        color="importancia",
-        color_continuous_scale="Blues",
-        title="Importância dos Fatores para o IPV utilizando Random Forest",
-        labels={"importancia": "Importância", "fator": "Fator"},
-    )
-    fig.update_traces(texttemplate="%{text:.2f}", textposition="outside")
-    fig.update_layout(showlegend=False)
-    show_plot(fig, "rf_importancia_ipv")
-
-    texto(
-        "A importância dos fatores sugere maior peso do IPP e do IEG na explicação do IPV, seguidos por IDA. IPS e IAN tendem a ter contribuição menor no modelo, reforçando a leitura de que o ponto de virada é multidimensional e fortemente influenciado por aspectos psicopedagógicos e de engajamento."
-    )
-
-# ==========================================================
-# TAB 4 — Perfil de Risco Consolidado
-# ==========================================================
-with tab4:
-    col_p1, col_p2 = st.columns(2)
-
-    with col_p1:
-        df_risco = df.dropna(subset=["ieg", "ida"]).copy()
-        cut_ieg = df_risco["ieg"].median()
-        cut_ida = df_risco["ida"].median()
-
-        def class_quadrant(row):
-            if row["ieg"] >= cut_ieg and row["ida"] >= cut_ida:
-                return "Alto Engajamento / Alto Desempenho"
-            if row["ieg"] < cut_ieg and row["ida"] >= cut_ida:
-                return "Baixo Engajamento / Alto Desempenho"
-            if row["ieg"] >= cut_ieg and row["ida"] < cut_ida:
-                return "Alto Engajamento / Baixo Desempenho"
-            return "Baixo Engajamento / Baixo Desempenho"
-
-        df_risco["quadrante"] = df_risco.apply(class_quadrant, axis=1)
-
-        fig = px.scatter(
-            df_risco,
-            x="ieg",
-            y="ida",
-            color="quadrante",
-            hover_data=["id_aluno"],
-            title="Matriz de Risco: IEG x IDA",
-            labels={"ieg": "IEG", "ida": "IDA"},
+    with col_def2:
+        df_2024 = df[df["ano"] == 2024].copy()
+        df_rede = (
+            df_2024[df_2024["inst_ensino_lbl"] != "Outro"]
+            .groupby(["inst_ensino_lbl", "nivel_defasagem_lbl"], as_index=False)
+            .size()
         )
-
-        fig.add_shape(
-            type="line",
-            x0=cut_ieg, x1=cut_ieg,
-            y0=df_risco["ida"].min(), y1=df_risco["ida"].max(),
-            line=dict(color="black", dash="dash"),
-        )
-        fig.add_shape(
-            type="line",
-            y0=cut_ida, y1=cut_ida,
-            x0=df_risco["ieg"].min(), x1=df_risco["ieg"].max(),
-            line=dict(color="black", dash="dash"),
-        )
-
-        show_plot(fig, "matriz_risco")
-
-    with col_p2:
-        df_prof = df.dropna(subset=["nivel_defasagem", "evadido"]).copy()
-        df_prof["perfil"] = df_prof["nivel_defasagem"].astype(str)
-
-        evasao_perfil = df_prof.groupby("perfil", as_index=False)["evadido"].mean()
-        evasao_perfil["evasao_pct"] = evasao_perfil["evadido"] * 100
 
         fig = px.bar(
-            evasao_perfil,
-            x="perfil",
-            y="evasao_pct",
-            color="perfil",
+            df_rede,
+            x="inst_ensino_lbl",
+            y="size",
+            color="nivel_defasagem_lbl",
             color_discrete_map=CORES_DEFASAGEM,
-            text="evasao_pct",
-            title="Probabilidade de Evasão por Perfil (defasagem)",
-            labels={"perfil": "Perfil do aluno", "evasao_pct": "Probabilidade de evasão (%)"},
+            category_orders={"nivel_defasagem_lbl": ORDEM_DEFASAGEM},
+            barmode="group",
+            title="Defasagem por Rede de Ensino (2024)",
+            labels={
+                "inst_ensino_lbl": "Rede de ensino",
+                "size": "Quantidade",
+                "nivel_defasagem_lbl": "Nível de defasagem"
+            },
         )
-        fig.update_traces(texttemplate="%{text:.1f}%", textposition="outside")
-        fig.update_layout(showlegend=False)
-        show_plot(fig, "evasao_perfil")
+        show_plot(fig, "t2_def_rede_2024")
 
-    texto(
-        "Os gráficos indicam que o risco de evasão está associado tanto ao nível de defasagem quanto à combinação entre engajamento e desempenho. A matriz de risco mostra que alunos com baixo engajamento e baixo desempenho concentram maior vulnerabilidade, enquanto níveis mais altos de engajamento tendem a se associar a melhores resultados acadêmicos. Já a análise por perfil de defasagem revela aumento da probabilidade de evasão conforme a defasagem se torna mais severa, destacando esse grupo como prioritário para intervenções de apoio."
-    )
+# =========================
+# TAB 3 — Autoavaliação (IAA)
+# =========================
+with tab3:
+    col_iaa1, col_iaa2 = st.columns(2)
+
+    with col_iaa1:
+        fig = px.box(
+            df,
+            x="nivel_defasagem_lbl",
+            y="iaa",
+            color="nivel_defasagem_lbl",
+            color_discrete_map=CORES_DEFASAGEM,
+            category_orders={"nivel_defasagem_lbl": ORDEM_DEFASAGEM},
+            title="Distribuição do IAA por Nível de Defasagem",
+            labels={"nivel_defasagem_lbl": "Nível de defasagem", "iaa": "IAA"},
+        )
+        fig.update_layout(showlegend=False)
+        show_plot(fig, "t3_iaa_box")
+
+    with col_iaa2:
+        fig = px.scatter(
+            df,
+            x="ida",
+            y="iaa",
+            color="nivel_defasagem_lbl",
+            color_discrete_map=CORES_DEFASAGEM,
+            category_orders={"nivel_defasagem_lbl": ORDEM_DEFASAGEM},
+            opacity=0.6,
+            title="Relação entre IDA e IAA por Nível de Defasagem",
+            labels={"ida": "IDA", "iaa": "IAA", "nivel_defasagem_lbl": "Nível de defasagem"},
+        )
+        show_plot(fig, "t3_ida_iaa")
+
+# =========================
+# TAB 4 — IPP
+# =========================
+with tab4:
+    col_ipp1, col_ipp2 = st.columns(2)
+
+    with col_ipp1:
+        fig = px.scatter(
+            df,
+            x="ian",
+            y="ipp",
+            title="Relação entre IPP e IAN",
+            trendline="ols",
+            color="nivel_defasagem_lbl",
+            color_discrete_map=CORES_DEFASAGEM,
+            category_orders={"nivel_defasagem_lbl": ORDEM_DEFASAGEM},
+            opacity=0.5,
+            labels={
+                "ian": "IAN (quanto menor, mais defasado)",
+                "ipp": "IPP",
+                "nivel_defasagem_lbl": "Nível de defasagem"
+            },
+        )
+        show_plot(fig, "t4_ipp_ian")
+
+    with col_ipp2:
+        df_area = df.groupby("nivel_defasagem_lbl", as_index=False)[["ian", "ipp"]].mean()
+        df_area["nivel_defasagem_lbl"] = pd.Categorical(
+            df_area["nivel_defasagem_lbl"],
+            categories=ORDEM_DEFASAGEM,
+            ordered=True
+        )
+        df_area = df_area.sort_values("nivel_defasagem_lbl")
+
+        fig, ax = plt.subplots()
+        ax.fill_between(df_area["nivel_defasagem_lbl"].astype(str), df_area["ian"], alpha=0.4, label="IAN")
+        ax.fill_between(df_area["nivel_defasagem_lbl"].astype(str), df_area["ipp"], alpha=0.4, label="IPP")
+        ax.set_xlabel("Nível de defasagem")
+        ax.set_ylabel("Média do indicador")
+        ax.set_title("IAN e IPP por Nível de Defasagem")
+        ax.legend()
+        st.pyplot(fig, use_container_width=True)
+
 st.divider()
 
 c1, c2, c3 = st.columns(3)
