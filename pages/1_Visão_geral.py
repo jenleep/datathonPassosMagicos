@@ -112,3 +112,77 @@ with k3:
         fmt_pct(prop_defasagem),
         "Proporção na base total"
     )
+
+st.divider()
+
+st.subheader("Glossário Expandido")
+
+with st.expander("IDA — Indicador de Desempenho Acadêmico"):
+    st.write(
+        """
+        Mede o desempenho acadêmico do aluno a partir da média de suas notas.
+        Esse indicador ajuda a identificar o nível de aproveitamento nas atividades
+        e permite acompanhar a evolução do rendimento ao longo do tempo.
+        """
+    )
+
+with st.expander("IAN — Indicador de Adequação ao Nível"):
+    st.write(
+        """
+        Indica o quanto o aluno está adequado ao nível de ensino esperado para sua etapa escolar.
+        Valores mais baixos sugerem maior defasagem entre a série/ano cursado e o desempenho esperado.
+        """
+    )
+
+with st.expander("IAA — Indicador de Autoavaliação Acadêmica"):
+    st.write(
+        """
+        Representa a percepção do próprio aluno sobre sua trajetória e seu desempenho acadêmico.
+        Esse indicador complementa as métricas objetivas ao incorporar a visão subjetiva do estudante
+        sobre seu processo de aprendizagem.
+        """
+    )
+
+with st.expander("IEG — Indicador de Engajamento"):
+    st.write(
+        """
+        Mede o nível de participação, envolvimento e compromisso do aluno com as atividades do programa.
+        Em geral, níveis mais altos de engajamento estão associados a maior permanência e melhores resultados acadêmicos.
+        """
+    )
+
+with st.expander("IPV — Indicador de Ponto de Virada"):
+    st.write(
+        """
+        Captura mudanças relevantes na trajetória do aluno ao longo do tempo,
+        indicando avanços, estabilidade ou recuos em seu desenvolvimento.
+        É um indicador importante para entender transições e identificar momentos críticos na jornada educacional.
+        """
+    )
+
+with st.expander("IPS — Indicador Psicossocial"):
+    st.write(
+        """
+        Reflete aspectos emocionais, comportamentais e sociais que podem influenciar
+        o desempenho e a permanência do aluno no programa.
+        Alterações nesse indicador podem sinalizar risco antes mesmo de quedas acadêmicas mais visíveis.
+        """
+    )
+
+with st.expander("IPP — Indicador Psicopedagógico"):
+    st.write(
+        """
+        Sintetiza fatores relacionados ao acompanhamento psicopedagógico e ao processo de aprendizagem.
+        Esse indicador ajuda a identificar barreiras cognitivas, comportamentais ou pedagógicas
+        que podem afetar a evolução escolar do aluno.
+        """
+    )
+
+with st.expander("INDE — Indicador de Desenvolvimento Educacional"):
+    st.write(
+        """
+        Consolida diferentes dimensões do desenvolvimento do aluno em uma medida mais ampla.
+        Funciona como um indicador global da trajetória educacional, integrando aspectos de desempenho,
+        adequação, engajamento e suporte.
+        """
+    )
