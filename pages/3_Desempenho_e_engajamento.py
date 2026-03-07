@@ -360,6 +360,7 @@ with tab3:
         "O heatmap de correlação evidencia a natureza multidimensional do desenvolvimento dos alunos. Observa-se que o IPV apresenta associação moderada a forte com IPP, IDA e IEG, indicando influência combinada de fatores psicopedagógicos, desempenho acadêmico e engajamento."
     )
 
+    st.divider()
     st.subheader("Influência de Comportamentos no IPV ao Longo do Tempo (Painel com Efeitos Fixos)")
 
     anos_interesse = [2022, 2023, 2024]
@@ -386,9 +387,25 @@ with tab3:
 
     with c1:
         fig_coef, ax = plt.subplots()
+
         coef.plot(kind="bar", ax=ax)
-        ax.set_title("Coeficientes Padronizados (efeitos fixos)")
+
+        # remover fundo branco
+        fig_coef.patch.set_alpha(0)
+        ax.set_facecolor("none")
+
+        # remover bordas (frame)
+        for spine in ax.spines.values():
+            spine.set_visible(False)
+
+        # título e label
+        ax.set_title("Coeficientes Padronizados (efeitos fixos)", loc="left", pad=20)
         ax.set_ylabel("Impacto no IPV")
+        coef.plot(kind="bar", ax=ax, color="#145089")
+
+        # grid leve (opcional, melhora leitura)
+        ax.grid(axis="y", linestyle="--", alpha=0.3)
+
         st.pyplot(fig_coef, use_container_width=True)
 
     with c2:
