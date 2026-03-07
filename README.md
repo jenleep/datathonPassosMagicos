@@ -1,29 +1,12 @@
-# datathonPassosMagicos
+# Datathon — Passos Mágicos
 
-# 📊 Datathon — Passos Mágicos
+Projeto desenvolvido para a última fase da Pós Tech Data Analytics com o objetivo de analisar a trajetória educacional de alunos participantes do programa da Associação Passos Mágicos e identificar fatores que influenciam a defasagem ao longo do tempo, além de responder a outras questões propostas.
 
-Projeto desenvolvido para o **Datathon Passos Mágicos**, com o objetivo de analisar a trajetória educacional de alunos participantes do programa e identificar **fatores que influenciam o Ponto de Virada (IPV)** ao longo do tempo.
-
-A aplicação foi construída em **Python + Streamlit** e apresenta análises exploratórias, visualizações interativas e um modelo preditivo baseado nos indicadores educacionais do programa.
+A aplicação foi construída em Python e Streamlit e apresenta análises exploratórias, visualizações interativas e um modelo preditivo baseado em indicadores educacionais do programa.
 
 ---
 
-# 🎯 Objetivo do Projeto
-
-O objetivo central do projeto é responder à seguinte pergunta:
-
-**Quais comportamentos — acadêmicos, emocionais ou de engajamento — mais influenciam o IPV ao longo do tempo?**
-
-Para isso, o projeto:
-
-- Analisa a evolução dos indicadores educacionais
-- Investiga padrões de desempenho e engajamento
-- Identifica fatores associados ao **Ponto de Virada (IPV)**
-- Desenvolve um **modelo preditivo** para estimar o IPV
-
----
-
-# 📚 Sobre os Indicadores
+# Sobre os Indicadores
 
 Os dados utilizados no projeto incluem indicadores educacionais desenvolvidos pelo programa:
 
@@ -41,11 +24,11 @@ Esses indicadores permitem avaliar diferentes dimensões do desenvolvimento dos 
 
 ---
 
-# 📈 Estrutura da Aplicação
+# Estrutura da Aplicação
 
-A aplicação está organizada em páginas no **Streamlit**, cada uma explorando uma dimensão da análise.
+A aplicação está organizada em páginas no Streamlit, cada uma explorando uma dimensão da análise.
 
-## 1️⃣ Perfil dos Alunos e Defasagem
+## Perfil dos Alunos e Defasagem
 
 Analisa características demográficas e educacionais dos alunos:
 
@@ -57,7 +40,7 @@ Analisa características demográficas e educacionais dos alunos:
 
 ---
 
-## 2️⃣ Trajetória Educacional
+## Trajetória Educacional
 
 Explora a evolução dos alunos ao longo do tempo:
 
@@ -68,25 +51,25 @@ Explora a evolução dos alunos ao longo do tempo:
 
 ---
 
-## 3️⃣ Desempenho e Engajamento
+## Desempenho e Engajamento
 
 Investiga a relação entre desempenho acadêmico e engajamento:
 
-- Evolução dos indicadores **IEG, IDA e IPS**
+- Evolução dos indicadores IEG, IDA e IPS
 - Comparação entre diferentes grupos de alunos
-- Análise da relação entre indicadores e **IPV**
+- Análise da relação entre indicadores e IPV
 
 ---
 
-## 4️⃣ Modelo Preditivo
+## Modelo Preditivo
 
-Desenvolve um modelo para estimar o **IPV** a partir dos indicadores educacionais.
+Desenvolve um modelo para estimar o IPV a partir dos indicadores educacionais.
 
 O modelo analisa o impacto de fatores como:
 
-- Engajamento (**IEG**)
-- Desempenho acadêmico (**IDA**)
-- Aspectos psicopedagógicos (**IPP**)
+- Engajamento (IEG)
+- Desempenho acadêmico (IDA)
+- Aspectos psicopedagógicos (IPP)
 
 Os resultados são apresentados por meio de:
 
@@ -96,7 +79,7 @@ Os resultados são apresentados por meio de:
 
 ---
 
-# 🧠 Metodologia
+# Metodologia
 
 O projeto segue as etapas clássicas de ciência de dados:
 
@@ -106,11 +89,11 @@ O projeto segue as etapas clássicas de ciência de dados:
 4. Visualização de padrões
 5. Modelagem estatística e preditiva
 
-Também foi realizada uma filtragem para acompanhar **os mesmos alunos ao longo dos anos**, permitindo análises de evolução individual.
+Também foi realizada uma filtragem para acompanhar os mesmos alunos ao longo dos anos, permitindo análises de evolução individual.
 
 ---
 
-# 🛠️ Tecnologias Utilizadas
+# Tecnologias Utilizadas
 
 - Python
 - Streamlit
@@ -123,7 +106,7 @@ Também foi realizada uma filtragem para acompanhar **os mesmos alunos ao longo 
 
 ---
 
-# 📂 Estrutura do Projeto
+# Estrutura do Projeto
   datathon-passos-magicos
 │
 ├── app.py
@@ -145,51 +128,34 @@ Também foi realizada uma filtragem para acompanhar **os mesmos alunos ao longo 
 
 ---
 
-# ▶️ Como Executar o Projeto
+# Como Executar o Projeto
 
-### 1️⃣ Clonar o repositório
+### Clonar o repositório
 git clone https://github.com/seu-usuario/datathonpassosmagicos.git
 
 cd datathonpassosmagicos
 
 ---
 
-### 2️⃣ Instalar dependências
+### Instalar dependências
 pip install -r requirements.txt
 
 ---
 
-### 3️⃣ Executar o aplicativo
+### Executar o aplicativo
 streamlit run Home.py
 
 O aplicativo abrirá automaticamente no navegador.
 
 ---
 
-# 📊 Exemplos de Análises
-
-O dashboard inclui visualizações como:
-
-- Evolução dos indicadores ao longo do tempo
-- Distribuição de defasagem escolar
-- Relação entre indicadores educacionais
-- Importância de fatores no IPV
-
-Essas análises ajudam a identificar **quais dimensões têm maior impacto no desenvolvimento dos alunos**.
-
----
-
-# 💡 Principais Insights
+# Principais Insights
 
 Entre os principais resultados encontrados:
 
-- O **engajamento (IEG)** apresenta forte relação com o IPV
-- Indicadores psicopedagógicos (**IPP**) também têm influência relevante
-- A redução da **defasagem escolar** ao longo do tempo indica impacto positivo do programa
+- O engajamento (IEG apresenta forte relação com o IPV
+- Indicadores psicopedagógicos (IPP) também têm influência relevante
+- A redução da defasagem escolar ao longo do tempo indica impacto positivo do programa
 - A permanência no programa está associada a melhorias nos indicadores educacionais
 
 ---
-
-# 👥 Equipe
-
-Projeto desenvolvido para o **Datathon Passos Mágicos**.
