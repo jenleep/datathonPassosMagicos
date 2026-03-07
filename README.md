@@ -107,7 +107,8 @@ Também foi realizada uma filtragem para acompanhar os mesmos alunos ao longo do
 ---
 
 # Estrutura do Projeto
-  datathon-passos-magicos
+  ```
+datathon-passos-magicos
 │
 ├── app.py
 ├── pages
@@ -125,6 +126,7 @@ Também foi realizada uma filtragem para acompanhar os mesmos alunos ao longo do
 │
 ├── requirements.txt
 └── README.md
+```
 
 ---
 
