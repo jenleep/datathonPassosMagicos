@@ -3,14 +3,14 @@ import pandas as pd
 import plotly.express as px
 import matplotlib.pyplot as plt
 
-from utils.style import apply_global_style
-from utils.components import texto, show_plot, section_title, section_intro
+from utils.style import apply_style
+from utils.components import texto, page_title
 
 # =========================
 # Page config
 # =========================
 st.set_page_config(page_title="Perfil dos Alunos e Defasagem", layout="wide")
-apply_global_style()
+apply_style()
 
 DATA_CSV = "data/base_pede_limpa.csv"
 
@@ -73,16 +73,15 @@ CORES_PEDRA = {
 }
 
 # =========================
-# Data
+# Helpers locais
 # =========================
 @st.cache_data(show_spinner=False)
 def load_data(path: str) -> pd.DataFrame:
     df_ = pd.read_csv(path)
 
-    df_["genero_txt"] = df_["genero"].map({
-        "masculino": "Meninos",
-        "feminino": "Meninas"
-    })
+    df_["genero_txt"] = df_["genero"].map(
+        {"masculino": "Meninos", "feminino": "Meninas"}
+    )
 
     for col in ["idade", "defasagem", "ian", "ipp", "ida", "iaa"]:
         if col in df_.columns:
@@ -94,31 +93,42 @@ def load_data(path: str) -> pd.DataFrame:
     df_["inst_ensino_lbl"] = df_["inst_ensino"].map(ROTULOS_REDE).fillna(df_["inst_ensino"])
 
     df_["nivel_ensino_lbl"] = pd.Categorical(
-        df_["nivel_ensino_lbl"],
-        categories=ORDEM_NIVEL_ENSINO,
-        ordered=True
+        df_["nivel_ensino_lbl"], categories=ORDEM_NIVEL_ENSINO, ordered=True
     )
     df_["nivel_defasagem_lbl"] = pd.Categorical(
-        df_["nivel_defasagem_lbl"],
-        categories=ORDEM_DEFASAGEM,
-        ordered=True
+        df_["nivel_defasagem_lbl"], categories=ORDEM_DEFASAGEM, ordered=True
     )
     df_["pedra_lbl"] = pd.Categorical(
-        df_["pedra_lbl"],
-        categories=ORDEM_PEDRA,
-        ordered=True
+        df_["pedra_lbl"], categories=ORDEM_PEDRA, ordered=True
     )
 
     return df_
 
+
+def show_plot(fig, key: str) -> None:
+    st.plotly_chart(fig, use_container_width=True, key=key)
+
+
+def eixo_ano(fig):
+    fig.update_xaxes(
+        tickmode="array",
+        tickvals=[2022, 2023, 2024],
+        ticktext=["2022", "2023", "2024"]
+    )
+    return fig
+
+
+# =========================
+# Data
+# =========================
 df = load_data(DATA_CSV)
 df_age = df[df["idade"].between(4, 22)].copy()
 
 # =========================
 # Header
 # =========================
-section_title("Perfil dos Alunos e Defasagem")
-section_intro(
+page_title(
+    "Perfil dos Alunos e Defasagem",
     "Esta seção apresenta uma visão geral do perfil dos alunos e da defasagem escolar entre 2022 e 2024, "
     "destacando como os estudantes se distribuem por características demográficas e educacionais e como a "
     "defasagem aparece ao longo do tempo."
@@ -160,7 +170,8 @@ with tab1:
 
     texto(
         "A base de alunos apresenta leve predominância feminina, com 53,7% de meninas e 46,3% de meninos, indicando uma distribuição relativamente equilibrada entre os gêneros. "
-        "Em relação à idade, observa-se maior concentração entre 10 e 15 anos, com pico próximo aos 11–13 anos. As distribuições de meninas e meninos são bastante semelhantes ao longo das idades, sugerindo perfil etário homogêneo entre os gêneros e ausência de distorções relevantes na composição da amostra."
+        "Em relação à idade, observa-se maior concentração entre 10 e 15 anos, com pico próximo aos 11–13 anos. As distribuições "
+        "de meninas e meninos são bastante semelhantes ao longo das idades, sugerindo perfil etário homogêneo entre os gêneros e ausência de distorções relevantes na composição da amostra."
     )
 
     anos = sorted(df_age["ano"].dropna().unique())
@@ -174,17 +185,22 @@ with tab1:
             nbins=13,
             title=f"Idade – {ano}",
             color_discrete_sequence=["#EE7F33"],
-            labels={"idade": "Idade", "count": "Quantidade"},
+            labels={"idade": "Idade"},
         )
         fig.update_layout(yaxis_title="Quantidade")
         col.plotly_chart(fig, use_container_width=True, key=f"t1_idade_{ano}")
 
     texto(
-        "A distribuição etária ao longo dos três anos mantém um padrão consistente, com maior concentração de alunos entre 10 e 14 anos. Em 2022 e 2023, observa-se pico próximo aos 11–12 anos, enquanto em 2024 há leve ampliação da base e maior dispersão nas idades acima de 15 anos, refletindo o crescimento do número de veteranos no programa."
+        "A distribuição etária ao longo dos três anos mantém um padrão consistente, com maior concentração de alunos entre 10 e 14 anos. Em 2022 e 2023, observa-se pico próximo aos 11–12 anos, "
+        "enquanto em 2024 há leve ampliação da base e maior dispersão nas idades acima de 15 anos, refletindo o crescimento do número de veteranos no programa. De modo geral, não há mudanças abruptas "
+        "no perfil etário, mas sim um aumento gradual do volume de alunos, mantendo o foco predominante no público pré-adolescente."
     )
 
     df_no_superior = df[df["nivel_ensino_lbl"] != "Ensino Superior"].copy()
-    df_no_superior["nivel_ensino_lbl"] = df_no_superior["nivel_ensino_lbl"].cat.remove_unused_categories()
+    if pd.api.types.is_categorical_dtype(df_no_superior["nivel_ensino_lbl"]):
+        df_no_superior["nivel_ensino_lbl"] = (
+            df_no_superior["nivel_ensino_lbl"].cat.remove_unused_categories()
+        )
 
     df_media = (
         df_no_superior.groupby(["ano", "nivel_ensino_lbl"], as_index=False)["defasagem"]
@@ -202,12 +218,18 @@ with tab1:
         labels={
             "ano": "Ano",
             "defasagem": "Defasagem (anos)",
-            "nivel_ensino_lbl": "Nível de ensino"
+            "nivel_ensino_lbl": "Nível de ensino",
         },
     )
-    fig.update_xaxes(tickmode="array", tickvals=[2022, 2023, 2024], ticktext=["2022", "2023", "2024"])
+    fig = eixo_ano(fig)
     fig.update_yaxes(autorange="reversed")
     show_plot(fig, "t1_def_media")
+
+    texto(
+        "A média da defasagem apresenta trajetória de melhora consistente entre 2022 e 2024 em todos os níveis de ensino, aproximando-se quase a zero, indicando redução da defasagem. "
+        "O avanço é mais expressivo no Ensino Médio e no Fundamental II, que demonstram queda contínua ao longo dos três anos. Já o Fundamental I apresenta melhora entre 2022 e 2023, com leve estabilização em 2024. "
+        "De forma geral, os dados sugerem evolução positiva no desempenho acadêmico e indicam impacto consistente do programa na redução da defasagem escolar."
+    )
 
 # =========================
 # TAB 2 — Defasagem (IAN)
@@ -230,10 +252,11 @@ with tab2:
             labels={
                 "ano": "Ano",
                 "proporcao": "Proporção",
-                "nivel_defasagem_lbl": "Nível de defasagem"
+                "nivel_defasagem_lbl": "Nível de defasagem",
             },
         )
         fig.update_layout(barmode="stack")
+        fig = eixo_ano(fig)
         show_plot(fig, "t2_def_prop")
 
     with col_def2:
@@ -256,10 +279,69 @@ with tab2:
             labels={
                 "inst_ensino_lbl": "Rede de ensino",
                 "size": "Quantidade",
-                "nivel_defasagem_lbl": "Nível de defasagem"
+                "nivel_defasagem_lbl": "Nível de defasagem",
             },
         )
         show_plot(fig, "t2_def_rede_2024")
+
+    texto(
+        "A análise proporcional da defasagem evidencia melhora consistente ao longo dos anos. A parcela de alunos em fase cresce de forma contínua entre 2022 e 2024, enquanto a defasagem moderada "
+        "reduz progressivamente e a severa permanece residual. Ao observar a rede de ensino em 2024, nota-se que a maior parte dos alunos da rede pública concentra-se na categoria moderada, embora também "
+        "apresente volume expressivo em fase. Já na rede privada, predomina a categoria em fase, com baixa incidência de defasagem severa. Os dados sugerem avanço geral no enfrentamento da defasagem, "
+        "mas indicam que, ou o desafio permanece mais intenso entre estudantes da rede pública, ou esse efeito pode estar associada a um efeito de seleção de bolsa."
+    )
+
+    col_def3, col_def4 = st.columns(2)
+
+    with col_def3:
+        df_idade = (
+            df.groupby("nivel_defasagem_lbl", as_index=False)["idade"]
+            .mean()
+            .rename(columns={"idade": "Idade média"})
+        )
+
+        fig = px.bar(
+            df_idade,
+            x="nivel_defasagem_lbl",
+            y="Idade média",
+            color="nivel_defasagem_lbl",
+            color_discrete_map=CORES_DEFASAGEM,
+            category_orders={"nivel_defasagem_lbl": ORDEM_DEFASAGEM},
+            title="Idade Média por Nível de Defasagem",
+            labels={
+                "nivel_defasagem_lbl": "Nível de defasagem",
+                "Idade média": "Idade média",
+            },
+        )
+        show_plot(fig, "t2_idade_def")
+
+    with col_def4:
+        df_fase = df.groupby(["nivel_ensino_lbl", "nivel_defasagem_lbl"], as_index=False).size()
+        df_fase["proporcao"] = df_fase.groupby("nivel_ensino_lbl")["size"].transform(lambda x: x / x.sum())
+
+        fig = px.bar(
+            df_fase,
+            x="nivel_ensino_lbl",
+            y="proporcao",
+            color="nivel_defasagem_lbl",
+            color_discrete_map=CORES_DEFASAGEM,
+            category_orders={"nivel_defasagem_lbl": ORDEM_DEFASAGEM},
+            title="Distribuição Proporcional da Defasagem por Nível de Ensino",
+            labels={
+                "nivel_ensino_lbl": "Nível de ensino",
+                "proporcao": "Proporção",
+                "nivel_defasagem_lbl": "Nível de defasagem",
+            },
+        )
+        fig.update_layout(barmode="stack")
+        show_plot(fig, "t2_def_nivel")
+
+    texto(
+        "Ao analisar conjuntamente a idade média por nível de defasagem e a distribuição proporcional por nível de ensino, observa-se um padrão consistente: a defasagem mais severa está associada a alunos mais velhos "
+        "e concentra-se, proporcionalmente, nas etapas mais avançadas da trajetória escolar. No Fundamental I, predomina a defasagem moderada, indicando que as dificuldades surgem já nas fases iniciais. No Fundamental II "
+        "e no Ensino Médio, há aumento da proporção de alunos em fase, mas ainda se mantém parcela relevante em defasagem moderada. A categoria severa permanece residual, porém mais associada a idades mais elevadas, sugerindo "
+        "acúmulo de dificuldades ao longo do tempo."
+    )
 
 # =========================
 # TAB 3 — Autoavaliação (IAA)
@@ -291,12 +373,70 @@ with tab3:
             category_orders={"nivel_defasagem_lbl": ORDEM_DEFASAGEM},
             opacity=0.6,
             title="Relação entre IDA e IAA por Nível de Defasagem",
-            labels={"ida": "IDA", "iaa": "IAA", "nivel_defasagem_lbl": "Nível de defasagem"},
+            labels={
+                "ida": "IDA",
+                "iaa": "IAA",
+                "nivel_defasagem_lbl": "Nível de defasagem",
+            },
         )
         show_plot(fig, "t3_ida_iaa")
 
+    texto(
+        "A análise da autoavaliação (IAA), em relação ao nível de defasagem indica que, embora as medianas permaneçam elevadas em todos os grupos, alunos em defasagem severa apresentam leve redução na autoavaliação "
+        "quando comparados aos que estão em fase ou com defasagem moderada. A dispersão entre IDA e IAA reforça a tendência positiva entre desempenho acadêmico e autoavaliação, embora haja forte sobreposição entre "
+        "os grupos."
+    )
+
+    col_iaa3, col_iaa4 = st.columns(2)
+
+    with col_iaa3:
+        df_iaa_ano = df.groupby(["ano", "nivel_defasagem_lbl"], as_index=False)["iaa"].mean()
+        df_iaa_ano = df_iaa_ano.rename(columns={"iaa": "IAA médio"})
+
+        fig = px.line(
+            df_iaa_ano,
+            x="ano",
+            y="IAA médio",
+            color="nivel_defasagem_lbl",
+            color_discrete_map=CORES_DEFASAGEM,
+            category_orders={"nivel_defasagem_lbl": ORDEM_DEFASAGEM},
+            markers=True,
+            title="Evolução do IAA por Ano e Nível de Defasagem",
+            labels={
+                "ano": "Ano",
+                "IAA médio": "IAA médio",
+                "nivel_defasagem_lbl": "Nível de defasagem",
+            },
+        )
+        fig = eixo_ano(fig)
+        show_plot(fig, "t3_iaa_linha")
+
+    with col_iaa4:
+        df_iaa_pedra = (
+            df.groupby("pedra_lbl", as_index=False)["iaa"]
+            .mean()
+            .rename(columns={"iaa": "IAA médio"})
+        )
+
+        fig = px.bar(
+            df_iaa_pedra,
+            x="pedra_lbl",
+            y="IAA médio",
+            color="pedra_lbl",
+            color_discrete_map=CORES_PEDRA,
+            title="IAA Médio por Pedra",
+            labels={"pedra_lbl": "Pedra", "IAA médio": "IAA médio"},
+        )
+        fig.update_layout(showlegend=False)
+        show_plot(fig, "t3_iaa_pedra")
+
+    texto(
+        "A evolução do IAA ao longo dos anos evidencia queda em 2023, seguida de recuperação em 2024 para todos os níveis de defasagem. O aumento é mais expressivo entre alunos em defasagem severa, sugerindo fortalecimento "
+        "da percepção de autoeficácia. Por pedra, há progressão consistente, com Topázio apresentando a maior média e Quartzo a menor, sugerindo amadurecimento socioemocional ao longo da trajetória no programa."
+    )
+
 # =========================
-# TAB 4 — IPP
+# TAB 4 — Índice Psicopedagógico (IPP)
 # =========================
 with tab4:
     col_ipp1, col_ipp2 = st.columns(2)
@@ -307,6 +447,7 @@ with tab4:
             x="ian",
             y="ipp",
             title="Relação entre IPP e IAN",
+            height=420,
             trendline="ols",
             color="nivel_defasagem_lbl",
             color_discrete_map=CORES_DEFASAGEM,
@@ -315,7 +456,7 @@ with tab4:
             labels={
                 "ian": "IAN (quanto menor, mais defasado)",
                 "ipp": "IPP",
-                "nivel_defasagem_lbl": "Nível de defasagem"
+                "nivel_defasagem_lbl": "Nível de defasagem",
             },
         )
         show_plot(fig, "t4_ipp_ian")
@@ -329,15 +470,42 @@ with tab4:
         )
         df_area = df_area.sort_values("nivel_defasagem_lbl")
 
-        fig, ax = plt.subplots()
-        ax.fill_between(df_area["nivel_defasagem_lbl"].astype(str), df_area["ian"], alpha=0.4, label="IAN")
-        ax.fill_between(df_area["nivel_defasagem_lbl"].astype(str), df_area["ipp"], alpha=0.4, label="IPP")
+        fig, ax = plt.subplots(figsize=(6, 4))
+
+        # remover fundo branco
+        fig.patch.set_alpha(0)
+        ax.set_facecolor("none")
+
+        # gráfico
+        ax.fill_between(df_area["nivel_defasagem_lbl"], df_area["ian"], alpha=0.4, label="IAN")
+        ax.fill_between(df_area["nivel_defasagem_lbl"], df_area["ipp"], alpha=0.4, label="IPP")
+
+        # labels
         ax.set_xlabel("Nível de defasagem")
         ax.set_ylabel("Média do indicador")
-        ax.set_title("IAN e IPP por Nível de Defasagem")
+        ax.set_title(
+        "IAN e IPP por Nível de Defasagem",
+        loc="left",   # alinha à esquerda
+        pad=80        # espaço acima do título
+    )
+
+        # remover bordas
+        for spine in ax.spines.values():
+            spine.set_visible(False)
+
+        # legenda
         ax.legend()
+
         st.pyplot(fig, use_container_width=True)
 
+    texto(
+        "A relação entre IPP e IAN mostra que a adequação acadêmica se deteriora claramente conforme aumenta a defasagem, enquanto o IPP varia de forma mais moderada entre os grupos. Esse comportamento sugere que o "
+        "indicador psicopedagógico captura dimensões complementares à defasagem e pode atuar como fator de proteção."
+    )
+
+# =========================
+# Footer insights
+# =========================
 st.divider()
 
 c1, c2, c3 = st.columns(3)
