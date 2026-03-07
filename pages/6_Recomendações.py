@@ -1,6 +1,8 @@
 import streamlit as st
+from utils.style import apply_global_style
 
 st.set_page_config(page_title="Recomendações", layout="wide")
+apply_global_style()
 
 # =========================
 # Helpers
@@ -15,7 +17,7 @@ def texto(msg: str):
         unsafe_allow_html=True
     )
 
-def card_recomendacao(titulo, achado, prioridade, acao, objetivo, cor):
+def card_recomendacao(titulo, achado, acao, objetivo, cor):
     st.markdown(
         f"""
         <div style="
@@ -29,13 +31,10 @@ def card_recomendacao(titulo, achado, prioridade, acao, objetivo, cor):
                 {titulo}
             </div>
             <div style="margin-top:8px; font-size:15px;">
-                <b>Achado que sustenta a ação:</b> {achado}
-            </div>
-            <div style="margin-top:6px; font-size:15px;">
-                <b>Prioridade:</b> {prioridade}
-            </div>
+                {achado}
+            </div>            
             <div style="margin-top:8px; font-size:15px;">
-                <b>Ação recomendada:</b> {acao}
+                <b>Ação:</b> {acao}
             </div>
             <div style="margin-top:6px; font-size:15px;">
                 <b>Objetivo:</b> {objetivo}
@@ -71,15 +70,6 @@ def card_direcionamento(titulo, texto, cor):
 # Header
 # =========================
 st.title("Recomendações de Intervenção")
-
-texto(
-    """
-    As recomendações abaixo foram elaboradas a partir dos principais padrões identificados na análise dos dados. 
-    De forma geral, os resultados mostram que o risco dos alunos não depende de um único fator, mas da combinação entre 
-    desempenho acadêmico, engajamento, aspectos psicossociais e suporte psicopedagógico. 
-    """
-)
-
 st.divider()
 
 # =========================
@@ -91,7 +81,6 @@ with col1:
     card_recomendacao(
         "Fortalecimento do Engajamento",
         "Os alunos evadidos apresentam, em média, menor IEG e maior dispersão, indicando que o engajamento funciona como fator protetivo.",
-        "Alta",
         "Implementar acompanhamento mais próximo da participação dos alunos, com monitoramento de frequência, metas de curto prazo e estratégias de reforço de vínculo com o programa.",
         "Reduzir o risco de evasão e sustentar a permanência dos estudantes com menor adesão às atividades.",
         "#EC3237"
@@ -100,7 +89,6 @@ with col1:
     card_recomendacao(
         "Intensificação do Suporte Psicopedagógico",
         "O IPP apareceu como o fator mais influente na explicação do IPV, indicando forte peso dos aspectos psicopedagógicos na trajetória dos alunos.",
-        "Alta",
         "Priorizar acompanhamento psicopedagógico para alunos com sinais de maior vulnerabilidade, com foco em barreiras de aprendizagem, autonomia e rotina de estudos.",
         "Atuar sobre fatores estruturais que influenciam o ponto de virada e aumentar a chance de evolução consistente.",
         "#EC3237"
@@ -110,7 +98,6 @@ with col2:
     card_recomendacao(
         "Atenção Especial ao Fundamental II",
         "A análise da evasão mostra maior vulnerabilidade no Fundamental II, indicando que essa etapa exige monitoramento mais intensivo.",
-        "Alta",
         "Criar ações preventivas específicas para alunos dessa fase, com reforço acadêmico, acompanhamento individual e iniciativas de permanência.",
         "Conter o avanço da evasão em uma das etapas mais críticas da trajetória escolar.",
         "#EE7F33"
@@ -119,7 +106,6 @@ with col2:
     card_recomendacao(
         "Identificação Precoce de Alunos em Risco",
         "A matriz de risco mostra que alunos com baixo engajamento e baixo desempenho formam o grupo mais vulnerável, enquanto a defasagem severa está associada a maior probabilidade de evasão.",
-        "Média",
         "Usar a combinação entre IEG, IDA e nível de defasagem para classificar alunos em maior risco e priorizar intervenções preventivas antes do agravamento do quadro.",
         "Antecipar situações de piora e direcionar recursos para os perfis com maior probabilidade de evasão ou retrocesso.",
         "#EE7F33"
@@ -137,3 +123,4 @@ card_direcionamento("Direcionamento Estratégico",
     "Assim, a atuação mais eficaz tende a combinar três frentes: prevenção, monitoramento e intervenção focalizada.",
     "#145089"
 )
+
