@@ -16,7 +16,7 @@ st.title("Classificador de Risco Escolar")
 st.caption("Preencha os campos e clique em **Classificar** para estimar a probabilidade de piora da defasagem.")
 
 
-data_path = r"C:/Users/jenil/OneDrive/Documents/Faculdade/Tech Challenge 5/datathon/data/base_pede_modelo.csv"
+data_path = r"data/base_pede_modelo.csv"
 df = pd.read_csv(data_path)
 
 def risk_style(risk: float):
@@ -167,3 +167,4 @@ with st.expander("Relatório de classificação (dados de treino)"):
     report = classification_report(y_train, y_pred, output_dict=True)
     report_df = pd.DataFrame(report).transpose()
     st.dataframe(report_df, use_container_width=True)
+
