@@ -281,6 +281,92 @@ with tab2:
         "A relação entre IEG e IDA evidencia tendência positiva. A distribuição do IEG por nível de defasagem indica medianas mais altas entre alunos em fase e em defasagem moderada, enquanto defasagem severa apresenta maior dispersão."
     )
 
+    col1, col2 = st.columns(2)
+
+    # =========================
+    # Preparação dos dados
+    # =========================
+    df_plot = df.copy()
+
+    # Ajustar permanência para texto, se estiver numérica
+    if df_plot["tipo_estudante"].dtype != "object":
+        df_plot["tipo_estudante_txt"] = df_plot["tipo_estudante"].map({
+            'ingressante': "Ingressante",
+            'veterano': "Veterano"
+        })
+    else:
+        df_plot["tipo_estudante_txt"] = df_plot["tipo_estudante"]
+
+    # Remover nulos relevantes
+    df_plot = df_plot.dropna(subset=["ieg", "nivel_ensino_lbl", "tipo_estudante_txt", "ano"])
+
+    # =========================
+    # Coluna 1 — IEG por nível de ensino
+    # =========================
+    with col1:
+        df_ieg_nivel = (
+            df_plot.groupby("nivel_ensino_lbl", as_index=False)["ieg"]
+            .mean()
+            .sort_values("ieg", ascending=False)
+        )
+
+        fig1 = px.bar(
+            df_ieg_nivel,
+            x="nivel_ensino_lbl",
+            y="ieg",
+            color="nivel_ensino_lbl",
+            color_discrete_map=CORES_NIVEL_ENSINO,
+            title="IEG médio por Nível de Ensino",
+            text_auto=".2f"
+        )
+
+        fig1.update_layout(
+            xaxis_title="Nível de Ensino",
+            yaxis_title="IEG médio",
+            showlegend=False,
+        )
+
+        fig1.update_traces(
+            textposition="outside"
+        )
+
+        st.plotly_chart(fig1, use_container_width=True, key="grafico_ieg_nivel")
+
+
+    # =========================
+    # Coluna 2 — IEG e permanência por ano
+    # =========================
+    with col2:
+        df_ieg_perm = (
+            df_plot.groupby(["ano", "tipo_estudante_txt"], as_index=False)["ieg"]
+            .mean()
+            .sort_values("ano")
+        )
+
+        fig2 = px.line(
+            df_ieg_perm,
+            x="ano",
+            y="ieg",
+            color="tipo_estudante_txt",
+            markers=True,
+            title="IEG médio por Tipo de Estudante ao Longo do Tempo"
+        )
+
+        fig2.update_layout(
+            xaxis_title="Ano",
+            yaxis_title="IEG médio",
+            legend_title="Permanência"
+        )
+        fig2 = eixo_ano_inteiro(fig2, anos)
+        st.plotly_chart(fig2, use_container_width=True, key="grafico_ieg_permanencia")
+
+    texto(
+        """
+        Os gráficos apresentam a relação entre o nível de engajamento dos alunos (IEG), o nível de ensino e a permanência no programa ao longo do tempo. No primeiro gráfico, observa-se que os estudantes do ensino fundamental I apresentam o maior nível médio de engajamento, seguidos pelos alunos do ensino médio e do fundamental II, que possuem valores bastante próximos entre si. Já o grupo de ensino superior apresenta um valor significativamente inferior, possivelmente relacionado ao menor número de observações ou a diferenças no perfil desses estudantes.
+        No segundo gráfico, é possível observar a evolução do IEG médio entre ingressantes e veteranos ao longo dos anos. De forma geral, os ingressantes apresentam níveis de engajamento ligeiramente superiores aos veteranos em todos os períodos analisados. Ambos os grupos apresentam aumento no engajamento entre 2022 e 2023, seguido de uma redução em 2024. Ainda assim, os valores permanecem relativamente elevados, indicando níveis consistentes de participação dos alunos nas atividades do programa. Em conjunto, os gráficos sugerem que o engajamento tende a variar conforme o estágio educacional e o tempo de permanência no programa.
+        """
+    )
+
     df_pedra_ieg = df.groupby("pedra_lbl", as_index=False)["ieg"].mean().dropna()
     fig = px.bar(
         df_pedra_ieg,
@@ -416,6 +502,7 @@ with tab3:
             z="ipp",
             color="pedra_lbl",
             title="Dispersão 3D – IEG, IDA e IPP por Pedra",
+            labels={"ieg": "IEG", "ida": "IDA", "ipp": "IPP", "pedra_lbl": "Pedra"}, 
             color_discrete_map=CORES_PEDRA,
         )
         fig3d.update_layout(scene=dict(xaxis_title="IEG", yaxis_title="IDA", zaxis_title="IPP"))
@@ -517,15 +604,6 @@ with tab5:
 # =========================
 st.divider()
 
-st.markdown(
-"""
-<div style="font-size:18px; font-weight:700; margin-bottom:10px;">
-Principais insights
-</div>
-""",
-unsafe_allow_html=True
-)
-
 c1, c2, c3 = st.columns(3)
 
 with c1:
@@ -551,8 +629,8 @@ with c2:
         border-radius:10px;
         font-size:14px;
     ">
-    <b>Evolução na trajetória</b><br>
-    Fases mais avançadas do programa concentram maiores níveis de engajamento e desempenho.
+    <b>Engajamento e trajetória</b><br>
+    Aluno com menos tempo de programa e em fases iniciais apresentam maior engajamento.
     </div>
     """, unsafe_allow_html=True)
 
