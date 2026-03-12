@@ -62,21 +62,50 @@ df["jornada_txt"] = (
     .str.lower()
     .map({"recuo": "Recuo", "neutro": "Neutro", "avanco": "Avanço"})
 )
+ROTULOS_NIVEL_ENSINO = {
+    "fundamental1": "Fundamental I",
+    "fundamental2": "Fundamental II",
+    "medio": "Ensino Médio",
+    "superior": "Ensino Superior",
+}
+
+ROTULOS_DEFASAGEM = {
+    "em fase": "Em fase",
+    "moderada": "Defasagem moderada",
+    "severa": "Defasagem severa",
+}
+
+ROTULOS_TIPO_ESTUDANTE = {
+    "veterano": "Veterano",
+    "ingressante": "Ingressante",
+}
+
+df["nivel_ensino_lbl"] = df["nivel_ensino"].map(ROTULOS_NIVEL_ENSINO).fillna(df["nivel_ensino"])
+
+ORDEM_DEFASAGEM = ["Em fase", "Defasagem moderada", "Defasagem severa"]
+
+df["nivel_defasagem_lbl"] = df["nivel_defasagem"].map(ROTULOS_DEFASAGEM).fillna(df["nivel_defasagem"])
+df["nivel_defasagem_lbl"] = pd.Categorical(df["nivel_defasagem_lbl"], categories=ORDEM_DEFASAGEM, ordered=True)
+df['tipo_estudante'] = df['tipo_estudante'].map(ROTULOS_TIPO_ESTUDANTE).fillna(df['tipo_estudante'])
+
+ORDEM_NIVEL_ENSINO = ["Fundamental I", "Fundamental II", "Ensino Médio", "Ensino Superior"]
+ORDEM_JORNADA = ["Recuo", "Neutro", "Avanço"]
+ORDEM_PEDRA = ["Quartzo", "Ágata", "Ametista", "Topázio"]
 
 # =========================
 # Cores
 # =========================
 CORES_NIVEL_ENSINO = {
-    "fundamental1": "#FDD324",
-    "fundamental2": "#EE7F33",
-    "medio": "#EC3237",
-    "superior": "#145089",
+    "Fundamental I": "#FDD324",
+    "Fundamental II": "#EE7F33",
+    "Ensino Médio": "#EC3237",
+    "Ensino Superior": "#145089",
 }
-CORES_DEFASAGEM = {"em fase": "#145089", "moderada": "#FDD324", "severa": "#EE7F33"}
+CORES_DEFASAGEM = {"Em fase": "#145089", "Defasagem moderada": "#FDD324", "Defasagem severa": "#EE7F33"}
 CORES_EVASAO = {"Evadiu": "#7390AA", "Não Evadiu": "#EE7F33"}
 CORES_QUEDA = {True: "#145089", False: "#FDD324"}
 CORES_JORNADA = {"Recuo": "#145089", "Neutro": "#7390AA", "Avanço": "#FDD324"}
-CORES_ESTUDANTE = {"veterano": "#EE7F33", "ingressante": "#FDD324"}
+CORES_ESTUDANTE = {"Veterano": "#EE7F33", "Ingressante": "#FDD324"}
 
 # =========================
 # Tabs
@@ -98,18 +127,19 @@ with tab1:
 
     with col1:
         df_pre_2024 = df[df["ano"] != 2024].copy()
-        evasao_fase = df_pre_2024.groupby("nivel_ensino", as_index=False)["evadido"].mean()
+        evasao_fase = df_pre_2024.groupby("nivel_ensino_lbl", as_index=False)["evadido"].mean()
         evasao_fase["evasao_pct"] = evasao_fase["evadido"] * 100
 
         fig = px.bar(
             evasao_fase,
-            x="nivel_ensino",
+            x="nivel_ensino_lbl",
             y="evasao_pct",
-            color="nivel_ensino",
+            color="nivel_ensino_lbl",
             color_discrete_map=CORES_NIVEL_ENSINO,
+            category_orders={"nivel_ensino_lbl": ORDEM_NIVEL_ENSINO},
             text="evasao_pct",
             title="Evasão por Nível de Ensino (até 2023)",
-            labels={"nivel_ensino": "Nível de ensino", "evasao_pct": "Taxa de evasão (%)"},
+            labels={"nivel_ensino_lbl": "Nível de ensino", "evasao_pct": "Taxa de evasão (%)"},
         )
         fig.update_traces(texttemplate="%{text:.1f}%", textposition="outside")
         fig.update_layout(showlegend=False)
@@ -122,6 +152,7 @@ with tab1:
             y="ieg",
             color="evadido_txt",
             color_discrete_map=CORES_EVASAO,
+            category_orders={"evadido_txt": ["Não Evadiu", "Evadiu"]},
             title="Distribuição de IEG: Evadidos vs Não Evadidos",
             points="all",
             labels={"evadido_txt": "Status de evasão", "ieg": "IEG"},
@@ -136,8 +167,8 @@ with tab1:
     col3, col4 = st.columns(2)
 
     comp_defasagem = (
-        df.dropna(subset=["evadido_txt", "nivel_defasagem"])
-        .groupby(["evadido_txt", "nivel_defasagem"])
+        df.dropna(subset=["evadido_txt", "nivel_defasagem_lbl"])
+        .groupby(["evadido_txt", "nivel_defasagem_lbl"])
         .size()
         .reset_index(name="contagem")
     )
@@ -146,10 +177,12 @@ with tab1:
         evadiu = comp_defasagem[comp_defasagem["evadido_txt"] == "Evadiu"]
         fig = px.pie(
             evadiu,
-            names="nivel_defasagem",
+            names="nivel_defasagem_lbl",
             values="contagem",
             title="Composição da Defasagem – Evadiu",
-            color="nivel_defasagem",
+            color="nivel_defasagem_lbl",
+            category_orders={"nivel_defasagem_lbl": ORDEM_DEFASAGEM},
+            labels={"nivel_defasagem_lbl": "Nível de defasagem"},
             color_discrete_map=CORES_DEFASAGEM,
             hole=0.35,
         )
@@ -159,11 +192,13 @@ with tab1:
         nao_evadiu = comp_defasagem[comp_defasagem["evadido_txt"] == "Não Evadiu"]
         fig = px.pie(
             nao_evadiu,
-            names="nivel_defasagem",
+            names="nivel_defasagem_lbl",
             values="contagem",
             title="Composição da Defasagem – Não Evadiu",
-            color="nivel_defasagem",
+            color="nivel_defasagem_lbl",
             color_discrete_map=CORES_DEFASAGEM,
+            category_orders={"nivel_defasagem_lbl": ORDEM_DEFASAGEM},
+            labels={"nivel_defasagem_lbl": "Nível de defasagem"},
             hole=0.35,
         )
         show_plot(fig, "defasagem_nao_evadiu")
@@ -179,17 +214,17 @@ with tab2:
     anos_anteriores = [2022, 2023]
     df_prev = df[df["ano"].isin(anos_anteriores)].copy()
 
-    ips_evolucao = df_prev.groupby(["ano", "evadido"], as_index=False)["ips"].mean()
+    ips_evolucao = df_prev.groupby(["ano", "evadido_txt"], as_index=False)["ips"].mean()
 
     fig = px.line(
         ips_evolucao,
         x="ano",
         y="ips",
-        color="evadido",
+        color="evadido_txt",
         color_discrete_map=CORES_QUEDA,
         markers=True,
         title="Evolução do IPS antes da queda: Grupo Caiu vs Controle",
-        labels={"ips": "IPS médio", "evadido": "Grupo (evadiu?)"},
+        labels={"ips": "IPS médio", "evadido_txt": "Grupo"},
     )
     fig = eixo_ano_inteiro(fig, anos_anteriores)
     show_plot(fig, "ips_pre_queda")
@@ -202,29 +237,31 @@ with tab2:
 
     with col1:
         fig = px.box(
-            df.dropna(subset=["nivel_defasagem", "ips"]),
-            x="nivel_defasagem",
+            df.dropna(subset=["nivel_defasagem_lbl", "ips"]),
+            x="nivel_defasagem_lbl",
             y="ips",
-            color="nivel_defasagem",
+            color="nivel_defasagem_lbl",
             color_discrete_map=CORES_DEFASAGEM,
+            category_orders={"nivel_defasagem_lbl": ORDEM_DEFASAGEM},
             title="Distribuição de IPS por Nível de Defasagem",
             points="all",
-            labels={"nivel_defasagem": "Nível de defasagem", "ips": "IPS"},
+            labels={"nivel_defasagem_lbl": "Nível de defasagem", "ips": "IPS"},
         )
         fig.update_layout(showlegend=False)
         show_plot(fig, "ips_defasagem")
 
     with col2:
-        ips_fase = df.groupby("nivel_ensino", as_index=False)["ips"].mean()
+        ips_fase = df.groupby("nivel_ensino_lbl", as_index=False)["ips"].mean()
         fig = px.bar(
             ips_fase,
-            x="nivel_ensino",
+            x="nivel_ensino_lbl",
             y="ips",
-            color="nivel_ensino",
+            color="nivel_ensino_lbl",
             color_discrete_map=CORES_NIVEL_ENSINO,
+            category_orders={"nivel_ensino_lbl": ORDEM_NIVEL_ENSINO},
             text="ips",
             title="IPS Médio por Nível de Ensino",
-            labels={"nivel_ensino": "Nível de ensino", "ips": "IPS médio"},
+            labels={"nivel_ensino_lbl": "Nível de ensino", "ips": "IPS médio"},
         )
         fig.update_traces(texttemplate="%{text:.2f}", textposition="outside")
         fig.update_layout(showlegend=False)
@@ -242,17 +279,18 @@ with tab3:
 
     with col1:
         dist_jornada = df["jornada_txt"].value_counts(dropna=False).reset_index()
-        dist_jornada.columns = ["jornada", "contagem"]
+        dist_jornada.columns = ["jornada_txt", "contagem"]
 
         fig = px.bar(
             dist_jornada,
-            x="jornada",
+            x="jornada_txt",
             y="contagem",
-            color="jornada",
+            color="jornada_txt",
             color_discrete_map=CORES_JORNADA,
+            category_orders={"jornada_txt": ORDEM_JORNADA},
             text="contagem",
             title="Distribuição Geral de Alunos por Jornada",
-            labels={"jornada": "Jornada", "contagem": "Número de alunos"},
+            labels={"jornada_txt": "Jornada", "contagem": "Número de alunos"},
         )
         fig.update_traces(textposition="outside")
         fig.update_layout(showlegend=False)
